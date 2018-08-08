@@ -1,0 +1,1 @@
+This repo only serves to point out a flaw in the security of FA5 Pro. I will not be hosting this downloader anywhere, and any servers running this code are not affiliated with me. The FA team might patch these flaws eventually and I am not responsible for any of this code breaking.
