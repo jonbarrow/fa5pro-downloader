@@ -62,7 +62,7 @@ app.get('/fapro', async (request, response) => {
 		return response.send();
 	}
 
-	const version = query.v;
+	const version = query.v.replace('Release ', '');
 	const zip = new AdmZip();
 	for (const file of DATA_SET) {
 		for (const extension of file.extensions) {
@@ -118,7 +118,8 @@ async function getFA5Versions() {
 	const response = await got(FA_RELEASES_PAGE);
 	const html = response.body;
 
-	const spans = html.match(/<span class="css-truncate-target">.*?<\/span>/gi);
+	const spans = html.match(/<div class="f1 flex-auto min-width-0 text-normal">(.+?)<\/div>/gms);
+
 	const versions = spans.map(span => {
 		return span.match(/>(.*?)</)[1];
 	});
