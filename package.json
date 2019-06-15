@@ -12,7 +12,6 @@
     "adm-zip": "^0.4.11",
     "async": "^3.0.1",
     "got": "^9.0.0",
-    "prompts": "^2.1.0",
     "spinnies": "git+https://github.com/RedDuckss/spinnies.git"
   },
   "devDependencies": {

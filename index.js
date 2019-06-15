@@ -2,7 +2,6 @@ const url = require('url');
 const path = require('path');
 const fs = require("fs");
 const got = require('got');
-const prompts = require('prompts');
 const Spinnies = require('spinnies');
 const AdmZip = require('adm-zip');
 const async = require('async');
@@ -28,21 +27,16 @@ main();
 async function main() {
 	spinnies.add('loading-versions', { text: 'Loading Font Awesome 5 versions' });
 	const versions = await getFA5Versions();
-	const latestVersion = versions[0];
+	if (!versions || !versions[0]) {
+		spinnies.fail('loading-versions', { text: 'Failed to load Font Awesome 5 versions' });
+		return;
+	}
+
 	spinnies.succeed('loading-versions', { text: 'Loaded Font Awesome 5 versions' });
 
-	const {version} = await prompts([
-		{
-			type: 'select',
-			name: 'version',
-			message: 'Select a version',
-			choices: versions.map(version => ({ title: `v${version}`, value: version })),
-		}
-	]);
-
-	if (!version) return;
+	const latestVersion = versions[0];
 	
-	spinnies.add('ripping-start', { text: `Ripping FA5 v${version}` });
+	spinnies.add('ripping-start', { text: `Ripping FA5 v${latestVersion}` });
 
 	const zip = new AdmZip();
 	const css = await got.get(`${FA_PRO_ASSET_BASE}/releases/v${latestVersion}/css/pro.min.css`, GOT_OPTIONS);
@@ -50,33 +44,31 @@ async function main() {
 	GOT_OPTIONS.encoding = null;
 
 	const fontUrls = css.body
-		.match(fontUrlRegex).map(url => url.replace('url(', '').replace(')', '').replace('../../..', FA_PRO_ASSET_BASE))
-		.filter(url => url.includes(version));
+		.match(fontUrlRegex).map(url => url.replace('url(', '').replace(')', '').replace('../../..', FA_PRO_ASSET_BASE));;
 
-	const cssFile = css.body.replace(/https:\/\/kit-free.fontawesome.com\/algo\/1/g, '..').replace(/..\/..\/..\/algo\/1/g, '..');
+	const cssFile = css.body
+		.replace(/https:\/\/kit-free.fontawesome.com\/algo\/1/g, '..')
+		.replace(/..\/..\/..\/algo\/1/g, '..')
+		.replace(/webfonts/g, 'fonts');
+
 	zip.addFile('css/all.css', Buffer.from(cssFile));
 
 	async.each(fontUrls, (fontUrl, callback) => {
 		
 		const fileName = path.basename(url.parse(fontUrl).pathname);
-		spinnies.add(fontUrl, { text: `Downloading ${fileName} from ${fontUrl}` });
 
 		got(fontUrl, GOT_OPTIONS)
-			.then(response => {;
-				const data = response.body;
-	
-				zip.addFile(`fonts/${fileName}`, data);
-	
-				spinnies.succeed(fontUrl, { text: `Added file ${fileName} to zip` });
+			.then(response => {
+				zip.addFile(`fonts/${fileName}`, response.body);
+
 				callback();
 			})
 			.catch(() => {
-				spinnies.fail(fontUrl, { text: `Failed to add file ${fileName} to zip!` })
 				callback();
 			});
 	}, () => {
-		fs.writeFileSync(`${__dirname}/fa5-v${version}.zip`, zip.toBuffer());
-		spinnies.succeed('ripping-start', { text: `Ripped FA5 v${version}. Saved to ${__dirname}/fa5-v${version}.zip` });
+		fs.writeFileSync(`${__dirname}/fa5-v${latestVersion}.zip`, zip.toBuffer());
+		spinnies.succeed('ripping-start', { text: `Ripped FA5 v${latestVersion}. Saved to ${__dirname}/fa5-v${latestVersion}.zip` });
 	});
 }
 
