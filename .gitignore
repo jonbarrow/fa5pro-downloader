@@ -71,3 +71,7 @@ typings/
 
 # Serverless directories
 .serverless
+
+# Custom
+t.js
+*.zip
